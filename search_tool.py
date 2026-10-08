@@ -1,8 +1,8 @@
 import uuid
 from sqlmodel import Session
 from llama_index.core.tools import FunctionTool
-from tools.db import engine
-from tools.chunking import search_chunks
+from db import engine
+from chunking import search_chunks
 
 def format_results(results) -> str:
     if not results:

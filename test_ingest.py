@@ -1,8 +1,8 @@
 from sqlmodel import Session
 from llama_index.core import SimpleDirectoryReader
-from tools.db import engine
+from db import engine
 from database.models import User, Topic, Source
-from tools.chunking import ingest_source
+from chunking import ingest_source
 
 with Session(engine) as session:
     #create a user, topic and source. Python->SQL
