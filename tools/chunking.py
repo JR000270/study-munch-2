@@ -29,7 +29,7 @@ def ingest_source(session: Session, source: Source, documents: list[Document]) -
     return  len(nodes)
 
 
-def search_chunks(session: Session, topic_id: uuid.UUID, question: str, k: int = 5, max_distance: float = .65) -> list[tuple[Chunk, Source, float]]:
+def search_chunks(session: Session, topic_id: uuid.UUID, question: str, k: int = 5, max_distance: float = .60) -> list[tuple[Chunk, Source, float]]:
     query_embedding = embed_model.get_query_embedding(question)
     distance = Chunk.embedding.cosine_distance(query_embedding).label("distance")
     statement = (
