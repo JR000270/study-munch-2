@@ -71,6 +71,7 @@ class Question(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     quiz_id: uuid.UUID = Field(foreign_key="quizzes.id", ondelete="CASCADE")
     question: str
+    position: int
 
 class Answer(SQLModel, table=True):
     __tablename__ = "answers"
@@ -78,6 +79,7 @@ class Answer(SQLModel, table=True):
     question_id: uuid.UUID = Field(foreign_key="questions.id", ondelete="CASCADE")
     answer: str
     is_correct: bool
+    position: int
 
 class Attempt(SQLModel, table=True):
     __tablename__ = "attempts"
