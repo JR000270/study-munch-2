@@ -3,8 +3,8 @@ from sqlmodel import Session, select
 
 from db import engine
 from database.models import User, Topic, Source
-from flashcards import (sample_note_passages, wiki_passages, cap_passages,
-                        plan_card_count, generate_cards)
+from passages import sample_note_passages, wiki_passages, cap_passages
+from flashcards import plan_card_count, generate_cards
 from wiki_search_tool import WikiError
 
 # usage: python test_flashcards.py <username> "<topic name>" [wiki query]

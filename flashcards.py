@@ -1,75 +1,76 @@
-import math
-import random
-import uuid
+# import math
+# import random
+# import uuid
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from sqlalchemy import func
-from sqlmodel import Session, select
+# from sqlalchemy import func
+# from sqlmodel import Session, select
 from llama_index.core.prompts import PromptTemplate
 from llama_index.llms.openai import OpenAI
 
-from database.models import Source, Chunk
-from wiki_search_tool import fetch_wikipedia_pages
+# from database.models import Source, Chunk
+# from wiki_search_tool import fetch_wikipedia_pages
+from passages import Passage, format_passages, CARDS_PER_PASSAGE
 
 load_dotenv("keys.env")
 
 
-SAMPLE_FRACTION = 0.5        # take about half of each source's chunks
-MAX_CHUNKS_PER_SOURCE = 8    # but never more than this from one source
-MAX_SMALL_FILE_CHUNKS = 5
-MAX_TOTAL_PASSAGES = 24      # one LLM call stays a reasonable size
-CARDS_PER_PASSAGE = 2
+# SAMPLE_FRACTION = 0.5        # take about half of each source's chunks
+# MAX_CHUNKS_PER_SOURCE = 8    # but never more than this from one source
+# MAX_SMALL_FILE_CHUNKS = 5
+# MAX_TOTAL_PASSAGES = 24      # one LLM call stays a reasonable size
+# CARDS_PER_PASSAGE = 2
 MIN_CARDS, MAX_CARDS = 3, 40
 
 
-@dataclass
-class Passage:
-    label: str   # where it came from: "notes.txt" or "Wikipedia: title"
-    text: str
+# @dataclass
+# class Passage:
+#     label: str   # where it came from: "notes.txt" or "Wikipedia: title"
+#     text: str
 
 
-# ---------- Step 1: gather passages (DB and Wikipedia, no LLM) ----------
-def sample_note_passages(session: Session, source_ids: list[uuid.UUID]) -> list[Passage]:
-    """Random chunks from each source, more from sources that have more content."""
-    passages = []
-    for source_id in source_ids:
-        source = session.get(Source, source_id)
-        total = session.exec(
-            select(func.count()).select_from(Chunk).where(Chunk.source_id == source_id)
-        ).one()
-        if source is None or total == 0:
-            continue
-        if total < MAX_SMALL_FILE_CHUNKS:
-            k = total
-        else:
-            k = min(total, MAX_CHUNKS_PER_SOURCE, max(1, math.ceil(total * SAMPLE_FRACTION)))
-        chunks = session.exec(
-            select(Chunk)
-            .where(Chunk.source_id == source_id)
-            .order_by(func.random())   # Postgres shuffles; we take the first k
-            .limit(k)
-        ).all()
-        # Back into document order, so the LLM reads them the way the notes flow
-        for chunk in sorted(chunks, key=lambda c: c.chunk_index):
-            passages.append(Passage(label=source.name, text=chunk.content))
-    return passages
+# # ---------- Step 1: gather passages (DB and Wikipedia, no LLM) ----------
+# def sample_note_passages(session: Session, source_ids: list[uuid.UUID]) -> list[Passage]:
+#     """Random chunks from each source, more from sources that have more content."""
+#     passages = []
+#     for source_id in source_ids:
+#         source = session.get(Source, source_id)
+#         total = session.exec(
+#             select(func.count()).select_from(Chunk).where(Chunk.source_id == source_id)
+#         ).one()
+#         if source is None or total == 0:
+#             continue
+#         if total < MAX_SMALL_FILE_CHUNKS:
+#             k = total
+#         else:
+#             k = min(total, MAX_CHUNKS_PER_SOURCE, max(1, math.ceil(total * SAMPLE_FRACTION)))
+#         chunks = session.exec(
+#             select(Chunk)
+#             .where(Chunk.source_id == source_id)
+#             .order_by(func.random())   # Postgres shuffles; we take the first k
+#             .limit(k)
+#         ).all()
+#         # Back into document order, so the LLM reads them the way the notes flow
+#         for chunk in sorted(chunks, key=lambda c: c.chunk_index):
+#             passages.append(Passage(label=source.name, text=chunk.content))
+#     return passages
 
 
-def wiki_passages(query: str) -> list[Passage]:
-    """Each article intro becomes one passage. Raises WikiError if Wikipedia is down."""
-    return [
-        Passage(label=f"Wikipedia: {p['title']}", text=p["extract"])
-        for p in fetch_wikipedia_pages(query)
-    ]
+# def wiki_passages(query: str) -> list[Passage]:
+#     """Each article intro becomes one passage. Raises WikiError if Wikipedia is down."""
+#     return [
+#         Passage(label=f"Wikipedia: {p['title']}", text=p["extract"])
+#         for p in fetch_wikipedia_pages(query)
+#     ]
 
 
-def cap_passages(passages: list[Passage]) -> list[Passage]:
-    if len(passages) <= MAX_TOTAL_PASSAGES:
-        return passages
-    keep = sorted(random.sample(range(len(passages)), MAX_TOTAL_PASSAGES))  # keep original order
-    return [passages[i] for i in keep]
+# def cap_passages(passages: list[Passage]) -> list[Passage]:
+#     if len(passages) <= MAX_TOTAL_PASSAGES:
+#         return passages
+#     keep = sorted(random.sample(range(len(passages)), MAX_TOTAL_PASSAGES))  # keep original order
+#     return [passages[i] for i in keep]
 
 
 def plan_card_count(num_passages: int) -> int:
@@ -107,8 +108,8 @@ Passages:
 )
 
 
-def format_passages(passages: list[Passage]) -> str:
-    return "\n\n".join(f"[{i}] ({p.label})\n{p.text}" for i, p in enumerate(passages, start=1))
+# def format_passages(passages: list[Passage]) -> str:
+#     return "\n\n".join(f"[{i}] ({p.label})\n{p.text}" for i, p in enumerate(passages, start=1))
 
 
 @dataclass
