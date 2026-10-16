@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 # from llama_index.core import SimpleDirectoryReader
 
 from db import engine, get_session
-from database.models import User, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
+from database.models import User, TokenUsage, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
 from auth import CurrentUser, authenticate_user, create_access_token, hash_password
 from chunking import ingest_source
 from chat_service import chat_turn
@@ -21,6 +21,7 @@ from flashcards import plan_card_count, generate_cards
 from quizzes import generate_quiz, plan_question_count
 from passages import  cap_passages, gather_passages
 from file_readers import load_documents, SUPPORTED_EXTENSIONS
+from usage import ensure_budget, make_token_counter, tokens_used_this_month, BudgetedUser, record_usage
 
 
 from datetime import datetime
@@ -43,6 +44,10 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: uuid.UUID
     username: str
+
+class UsageOut(BaseModel):
+    used_tokens: int
+    limit: int
 
 class Token(BaseModel):
     access_token: str
@@ -202,10 +207,10 @@ def get_owned_quiz(session: Session, quiz_id: uuid.UUID, user: User) -> Quiz:
     get_owned_topic(session, quiz.topic_id, user) 
     return quiz
 
-def get_owned_attempt(session, attempt_id, user)->list[AttemptListOut]:
+def get_owned_attempt(session, attempt_id, user)->AttemptListOut:
     attempt = session.get(Attempt, attempt_id)
     if attempt is None:
-        raise HTTPException(status_code=404, detail="Quiz Attempt now found")
+        raise HTTPException(status_code=404, detail="Quiz Attempt not found")
     get_owned_quiz(session, attempt.quiz_id,user)
     return attempt
 
@@ -246,6 +251,11 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], session: Sessio
 def me(user: CurrentUser):
     return UserOut(id=user.id, username=user.username)
 
+#--------Token Usage --------
+@app.get("/auth/me/usage", response_model=UsageOut)
+def get_token_usage(user: CurrentUser, session: SessionDep):
+    used = tokens_used_this_month(session, user.id)
+    return UsageOut(used_tokens=used, limit=user.token_limit)
 
 # ---------- Topics ----------
 @app.post("/topics", response_model=TopicOut, status_code=201)
@@ -294,25 +304,6 @@ def upload_source(
     path = topic_dir / f"{source.id}{suffix}"
     path.write_bytes(data)
     source.storage_path = str(path)
-
-    # try:
-    #     session.add(source)
-    #     session.flush()   # INSERT the source so the chunks' foreign key has a row to point at
-    #     documents = load_documents(str(path)) #new reader that has the custom ones added to it
-    #     #documents = SimpleDirectoryReader(input_files=[str(path)]).load_data()
-        
-    #     count = ingest_source(session=session, source=source, documents=documents)  # commits source + chunks together
-    # except Exception as e:
-    #     session.rollback()
-    #     path.unlink(missing_ok=True)
-    #     if not any(d.text.strip() for d in documents):
-    #         path.unlink(missing_ok=True)
-    #         raise HTTPException(
-    #             status_code=422,
-    #             detail="No readable text found. If this is a scanned PDF, it needs OCR first.",
-    #         )
-    #     else:
-    #         raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
     # --- Phase 1: parse the file. No DB involved, so no rollback needed. ---
     try:
         documents = load_documents(str(path))
@@ -387,21 +378,23 @@ async def send_message(chat_id: uuid.UUID, body: MessageIn, user: CurrentUser) -
         raise HTTPException(status_code=400, detail="Message is empty")
     with Session(engine) as session:
         get_owned_chat(session, chat_id, user)
-    answer = await chat_turn(chat_id, body.content)
+        ensure_budget(session, user)
+    answer = await chat_turn(chat_id, user.id, body.content)
     return MessageOut(role="assistant", content=answer)
 
 # --- Flashcards ---
 @app.post("/topics/{topic_id}/decks", status_code=201, response_model=DeckOut)
-def create_deck(topic_id: uuid.UUID, body: DeckCreate, user: CurrentUser):
+def create_deck(topic_id: uuid.UUID, body: DeckCreate, user: BudgetedUser):
     passages = gather_passages(topic_id, user, body.source_ids, body.include_wikipedia, body.wiki_query) #calls helper from passages to get the context for the creation of an object like flashcards/quizzes
-   
+    counter, cb = make_token_counter()
+
     if not passages:
         raise HTTPException(status_code=400, detail="No content found to make flashcards from")        
     
     #cap passages, plan the card count, generate cards.
     passages = cap_passages(passages)
     num_cards = plan_card_count(len(passages))
-    cards = generate_cards(passages, num_cards)
+    cards = generate_cards(passages, num_cards, cb)
     
     #make a new session: save a FlashcardDeck, then one Flashcard per card
     #    (front -> title, back -> content). Commit.
@@ -416,7 +409,9 @@ def create_deck(topic_id: uuid.UUID, body: DeckCreate, user: CurrentUser):
             name=deck.name,
             cards=[CardOut(id=f.id, front=f.title, back=f.content) for f in flashcards], #turns the cards into database object with id's
         )
+        record_usage(user.id, "flashcards", counter)
         session.commit()
+    #print(counter.llm_token_counts)
     #returns the deck id, name, and the cards
     return output_deck
 
@@ -453,11 +448,15 @@ def list_deck_cards(deck_id: uuid.UUID, user:CurrentUser, session: SessionDep):
 
 #----quizzes section-----
 @app.post("/topics/{topic_id}/quizzes", status_code=201, response_model=QuizOut)
-def create_quiz(topic_id: uuid.UUID, body: QuizCreate, user: CurrentUser):
+def create_quiz(topic_id: uuid.UUID, body: QuizCreate, user: BudgetedUser):
+    counter, cb = make_token_counter()
+
     passages = gather_passages(topic_id, user, body.source_ids,
                                body.include_wikipedia, body.wiki_query)
     num_questions = plan_question_count(len(passages), body.num_questions)
-    generated = generate_quiz(passages, num_questions)   # slow LLM call, no session open
+    generated = generate_quiz(passages, num_questions, cb)   # slow LLM call, no session open
+    #accounts for the tokens used in the attempt even if it is a failed one
+    record_usage(user.id, "quiz", counter)
     if not generated:
         raise HTTPException(status_code=502, detail="Quiz generation failed, please try again")
 
@@ -487,7 +486,14 @@ def create_quiz(topic_id: uuid.UUID, body: QuizCreate, user: CurrentUser):
                 for q, answers in rows
             ],
         )
+        session.add(TokenUsage(
+                            user_id=user.id, feature="quiz", model="gpt-4.1",
+                            prompt_tokens=counter.prompt_llm_token_count,
+                            completion_tokens=counter.completion_llm_token_count,
+        ))
         session.commit()
+
+    #print(counter.llm_token_counts)
     return output
 
 

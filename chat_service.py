@@ -2,8 +2,10 @@ import uuid
 from sqlmodel import Session, select
 from llama_index.core.llms import ChatMessage
 from db import engine
-from database.models import Chat, Message
+from database.models import Chat, Message, TokenUsage
 from agent import build_agent
+from usage import make_token_counter
+
 
 HISTORY_LIMIT = 20
 
@@ -22,7 +24,8 @@ def load_history(session: Session, chat_id: uuid.UUID) -> list[ChatMessage]:
 
 
 #what is called to chat with the agent and get its response
-async def chat_turn(chat_id: uuid.UUID, user_text: str) -> str:
+async def chat_turn(chat_id: uuid.UUID, user_id: uuid.UUID, user_text: str) -> str:
+
     # --- Transaction 1: look up the chat, load history, save the question ---
     with Session(engine) as session:
         chat = session.get(Chat, chat_id) #pull from the current chats table
@@ -34,13 +37,21 @@ async def chat_turn(chat_id: uuid.UUID, user_text: str) -> str:
         session.commit()
 
     # --- No database session open while the LLM works ---
-    agent = build_agent(topic_id)
+    counter, cb = make_token_counter()
+    agent = build_agent(topic_id, callback_manager = cb)
     handler = agent.run(user_msg=user_text, chat_history=history)
     answer = str(await handler)
+    #for testing to see if counter is working
+    #print(counter.llm_token_counts)
 
     # --- Transaction 2: save the answer ---
     with Session(engine) as session:
         session.add(Message(chat_id=chat_id, role="assistant", content=answer)) #add the agents response to the database
+        session.add(TokenUsage(
+            user_id=user_id, feature="chat", model="gpt-4.1",
+            prompt_tokens=counter.prompt_llm_token_count,
+            completion_tokens=counter.completion_llm_token_count,
+        ))
         session.commit()
 
     return answer

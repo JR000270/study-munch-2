@@ -29,10 +29,10 @@ How to answer:
 - If neither source answers the question, say so plainly."""
 
 
-def build_agent(topic_id) -> FunctionAgent:
+def build_agent(topic_id, callback_manager = None) -> FunctionAgent:
     return FunctionAgent(
         tools=[make_search_tool(topic_id), make_wiki_search_tool()],
-        llm=OpenAI(model="gpt-4.1"),  # pick a current tool-calling model from OpenAI's model list
+        llm=OpenAI(model="gpt-4.1", callback_manager=callback_manager),  # pick a current tool-calling model from OpenAI's model list
         system_prompt=SYSTEM_PROMPT,
     )
 
@@ -51,27 +51,3 @@ async def ask(agent: FunctionAgent, question: str, ctx: Context) -> str:
 
     response = await handler
     return str(response)
-
-
-# for testing out the agent
-# from sqlmodel import Session, select
-# from db import engine
-# from database.models import Topic
-#
-# async def main():
-#     with Session(engine) as session:
-#         topic = session.exec(select(Topic).where(Topic.name == "first test run")).first()
-
-#     agent = build_agent(topic.id)
-#     ctx = Context(agent)
-
-#     for q in [
-#         "Why is Halloween celebrated on October 31st?",           # notes should be enough
-#         "What flavor were the first Doritos?",                    # notes miss -> Wikipedia
-#         "What is Samhain and what did people do during it?",      # notes mention it briefly -> maybe both
-#         "Where did people celebrate it?",
-#     ]:
-#         print(f"\nQ: {q}")
-#         print(f"A: {await ask(agent, q, ctx)}")
-
-# asyncio.run(main())

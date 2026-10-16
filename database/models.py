@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from sqlmodel import SQLModel, Field
-from sqlalchemy import Column
+from sqlalchemy import Column, Index
 from pgvector.sqlalchemy import Vector
 
 def utcnow():
@@ -12,6 +12,19 @@ class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True) #the unique identifier, for the user
     username: str = Field(unique=True)
     password_hash: str
+    created_at: datetime = Field(default_factory=utcnow)
+    token_limit: int = Field(default=50_000, sa_column_kwargs={"server_default": "50000"})
+
+class TokenUsage(SQLModel, table=True):
+    __tablename__ = "token_usage"
+    __table_args__ = (Index("ix_token_usage_user_created", "user_id", "created_at"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id", ondelete="CASCADE")
+    feature: str  # "chat", "flashcards", "quiz"
+    model: str   # "gpt-4.1"
+    prompt_tokens: int
+    completion_tokens: int
     created_at: datetime = Field(default_factory=utcnow)
 
 class Topic(SQLModel, table=True):

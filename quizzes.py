@@ -70,11 +70,11 @@ class GeneratedQuestion:
     source_label: str   #to know where it came from    
 
 
-def generate_quiz(passages: list[Passage], num_questions: int) -> list[GeneratedQuestion]:
+def generate_quiz(passages: list[Passage], num_questions: int, callback_manager = None) -> list[GeneratedQuestion]:
     if not passages:
         raise ValueError("No content to make a quiz from")
 
-    llm = OpenAI(model="gpt-4.1", temperature=0.3)
+    llm = OpenAI(model="gpt-4.1", callback_manager=callback_manager, temperature=0.3)
     draft = llm.structured_predict(
         QuizDraft,
         QUIZ_PROMPT,
