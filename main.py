@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from llama_index.core import SimpleDirectoryReader
+# from llama_index.core import SimpleDirectoryReader
 
 from db import engine, get_session
 from database.models import User, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
@@ -20,12 +20,17 @@ from chat_service import chat_turn
 from flashcards import plan_card_count, generate_cards
 from quizzes import generate_quiz, plan_question_count
 from passages import  cap_passages, gather_passages
+from file_readers import load_documents, SUPPORTED_EXTENSIONS
+
+
+from datetime import datetime
+
 
 UPLOAD_DIR = Path("uploads")
-ALLOWED_EXTENSIONS = {".txt", ".md"}      # start small; PDFs need an extra reader package
-MAX_UPLOAD_BYTES = 5 * 1024 * 1024        # 5 MB
+ALLOWED_EXTENSIONS = SUPPORTED_EXTENSIONS
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024   # 25 MB
 
-app = FastAPI(title="Study RAG Agent")
+app = FastAPI(title="Study Munch")
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
@@ -138,8 +143,6 @@ class AttemptOut(BaseModel):
     score: int
     total: int
     results: list[QuestionResult]
-
-from datetime import datetime
 
 class ReviewOption(BaseModel):
     id: uuid.UUID
@@ -292,15 +295,51 @@ def upload_source(
     path.write_bytes(data)
     source.storage_path = str(path)
 
+    # try:
+    #     session.add(source)
+    #     session.flush()   # INSERT the source so the chunks' foreign key has a row to point at
+    #     documents = load_documents(str(path)) #new reader that has the custom ones added to it
+    #     #documents = SimpleDirectoryReader(input_files=[str(path)]).load_data()
+        
+    #     count = ingest_source(session=session, source=source, documents=documents)  # commits source + chunks together
+    # except Exception as e:
+    #     session.rollback()
+    #     path.unlink(missing_ok=True)
+    #     if not any(d.text.strip() for d in documents):
+    #         path.unlink(missing_ok=True)
+    #         raise HTTPException(
+    #             status_code=422,
+    #             detail="No readable text found. If this is a scanned PDF, it needs OCR first.",
+    #         )
+    #     else:
+    #         raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
+    # --- Phase 1: parse the file. No DB involved, so no rollback needed. ---
+    try:
+        documents = load_documents(str(path))
+    except Exception as e:
+        path.unlink(missing_ok=True)
+        # A file that can't be parsed is the user's problem (4xx), not the server's
+        raise HTTPException(
+            status_code=422,
+            detail="Could not read this file. It may be corrupted or password-protected.",
+        ) from e
+
+    if not documents:   # load_documents already dropped the empty pages
+        path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=422,
+            detail="No readable text found. If this is a scanned PDF, it needs OCR first.",
+        )
+
+    # --- Phase 2: save + embed. This touches the DB, so roll back on failure. ---
     try:
         session.add(source)
-        session.flush()   # INSERT the source so the chunks' foreign key has a row to point at
-        documents = SimpleDirectoryReader(input_files=[str(path)]).load_data()
-        count = ingest_source(session=session, source=source, documents=documents)  # commits source + chunks together
+        session.flush()
+        count = ingest_source(session=session, source=source, documents=documents)
     except Exception as e:
         session.rollback()
         path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Failed to process file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process file") from e
 
     return SourceOut(id=source.id, name=source.name, source_type=source.source_type, chunk_count=count)
 

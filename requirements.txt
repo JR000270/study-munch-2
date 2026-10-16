@@ -82,3 +82,4 @@ websockets==17.2
 wheel==0.47.0
 wrapt==2.5.0
 yarl==1.25.1
+olefile==0.47

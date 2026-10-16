@@ -16,6 +16,10 @@ def ingest_source(session: Session, source: Source, documents: list[Document]) -
     splitter = SentenceSplitter(chunk_size=512, chunk_overlap=50)
     # 1. Split the documents into nodes (chunks)
     nodes = splitter.get_nodes_from_documents(documents)
+     # the embedding API rejects empty strings so check for anything messed up
+    nodes = [n for n in nodes if n.get_content().strip()] 
+    if not nodes:
+        return 0
     # 2. Embed all the chunk texts in one batch call
     texts = [node.get_content() for node in nodes]
     embeddings = embed_model.get_text_embedding_batch(texts)

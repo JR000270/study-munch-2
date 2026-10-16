@@ -3,6 +3,7 @@ from llama_index.core import SimpleDirectoryReader
 from db import engine
 from database.models import User, Topic, Source
 from chunking import ingest_source
+from file_readers import load_documents
 
 with Session(engine) as session:
     #create a user, topic and source. Python->SQL
@@ -18,6 +19,7 @@ with Session(engine) as session:
     session.add(source)
     session.commit()
 
-    documents = SimpleDirectoryReader(input_files=["sample.txt"]).load_data()
+    documents = load_documents("sample.txt")
+    #documents = SimpleDirectoryReader(input_files=["sample.txt"]).load_data()
     count = ingest_source(session=session, source=source, documents=documents)
     print(f"Saved {count} chunks")

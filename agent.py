@@ -52,10 +52,12 @@ async def ask(agent: FunctionAgent, question: str, ctx: Context) -> str:
     response = await handler
     return str(response)
 
-from sqlmodel import Session, select
-from db import engine
-from database.models import Topic
 
+# for testing out the agent
+# from sqlmodel import Session, select
+# from db import engine
+# from database.models import Topic
+#
 # async def main():
 #     with Session(engine) as session:
 #         topic = session.exec(select(Topic).where(Topic.name == "first test run")).first()
