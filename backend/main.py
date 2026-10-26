@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 # from llama_index.core import SimpleDirectoryReader
 
 from db import engine, get_session
-from database.models import User, TokenUsage, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
+from backend.database.models import User, TokenUsage, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
 from auth import CurrentUser, authenticate_user, create_access_token, hash_password
 from chunking import ingest_source
 from chat_service import chat_turn

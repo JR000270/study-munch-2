@@ -1,7 +1,7 @@
 from sqlalchemy import inspect
 from sqlmodel import SQLModel
-from db import engine
-import database.models  # importing registers every table on SQLModel.metadata
+from backend.db import engine
+import models  # importing registers every table on SQLModel.metadata
 
 inspector = inspect(engine)          # reads the schema from Postgres
 existing = set(inspector.get_table_names())

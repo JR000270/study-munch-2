@@ -1,5 +1,5 @@
 from sqlmodel import Session
-from llama_index.core import SimpleDirectoryReader
+#from llama_index.core import SimpleDirectoryReader
 from db import engine
 from database.models import User, Topic, Source
 from chunking import ingest_source
