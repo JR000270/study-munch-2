@@ -1,4 +1,4 @@
-from wiki_search_tool import make_wiki_search_tool 
+from backend.tools.wiki_search_tool import make_wiki_search_tool 
 
 wiki_tool = make_wiki_search_tool()
 

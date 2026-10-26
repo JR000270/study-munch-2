@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from database.models import Source, Chunk
-from wiki_search_tool import fetch_wikipedia_pages
+from backend.tools.wiki_search_tool import fetch_wikipedia_pages
 from sqlmodel import Session, select
 from sqlalchemy import func
 from dotenv import load_dotenv
-from wiki_search_tool import WikiError
+from backend.tools.wiki_search_tool import WikiError
 from fastapi import HTTPException
 
 from database.models import User, Topic
@@ -12,6 +12,8 @@ from db import engine
 import math
 import random
 import uuid
+
+#this is for working with the text that the tools retrieve, it makes it so the agent can work with the new context by
 
 SAMPLE_FRACTION = 0.5        # take about half of each source's chunks
 MAX_CHUNKS_PER_SOURCE = 8    # but never more than this from one source
@@ -33,7 +35,7 @@ def get_owned_topic(session: Session, topic_id: uuid.UUID, user: User) -> Topic:
     return topic
 
 
-# ---------- Step 1: gather passages (DB and Wikipedia, no LLM) ----------
+# gather passages (DB and Wikipedia, no LLM)
 def sample_note_passages(session: Session, source_ids: list[uuid.UUID]) -> list[Passage]:
     """Random chunks from each source, more from sources that have more content."""
     passages = []

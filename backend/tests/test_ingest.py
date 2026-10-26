@@ -2,8 +2,8 @@ from sqlmodel import Session
 #from llama_index.core import SimpleDirectoryReader
 from db import engine
 from database.models import User, Topic, Source
-from chunking import ingest_source
-from file_readers import load_documents
+from backend.tools.chunking import ingest_source
+from backend.file_readers import load_documents
 
 with Session(engine) as session:
     #create a user, topic and source. Python->SQL
