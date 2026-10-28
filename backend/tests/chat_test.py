@@ -1,6 +1,6 @@
 import sys
 import uuid
-from chat_service import chat_turn
+from services.chat_service import chat_turn
 import asyncio
 
 #to run: python chat_test.py chat_id user_id question

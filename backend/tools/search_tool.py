@@ -2,7 +2,7 @@ import uuid
 from sqlmodel import Session
 from llama_index.core.tools import FunctionTool
 from db import engine
-from backend.tools.chunking import search_chunks
+from tools.chunking import search_chunks
 
 def format_results(results) -> str:
     if not results:

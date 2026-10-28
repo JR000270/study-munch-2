@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 from llama_index.core.agent.workflow import FunctionAgent, ToolCall, ToolCallResult
 from llama_index.llms.openai import OpenAI
 from llama_index.core.workflow import Context
-from backend.tools.search_tool import make_search_tool
-from backend.tools.wiki_search_tool import make_wiki_search_tool
+from tools.search_tool import make_search_tool
+from tools.wiki_search_tool import make_wiki_search_tool
 
 load_dotenv("keys.env")
 

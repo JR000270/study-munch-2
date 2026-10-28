@@ -1,6 +1,3 @@
-# import math
-# import random
-# import uuid
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -12,7 +9,7 @@ from llama_index.llms.openai import OpenAI
 
 # from database.models import Source, Chunk
 # from wiki_search_tool import fetch_wikipedia_pages
-from backend.tools.passages import Passage, format_passages, CARDS_PER_PASSAGE
+from tools.passages import Passage, format_passages, CARDS_PER_PASSAGE
 
 
 load_dotenv("keys.env")

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from database.models import Source, Chunk
-from backend.tools.wiki_search_tool import fetch_wikipedia_pages
+from tools.wiki_search_tool import fetch_wikipedia_pages
 from sqlmodel import Session, select
 from sqlalchemy import func
 from dotenv import load_dotenv
-from backend.tools.wiki_search_tool import WikiError
+from tools.wiki_search_tool import WikiError
 from fastapi import HTTPException
 
 from database.models import User, Topic

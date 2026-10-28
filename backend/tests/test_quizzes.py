@@ -2,8 +2,8 @@
 import sys
 from sqlmodel import Session, select
 from db import engine
-from backend.services.quizzes import generate_quiz, plan_question_count
-from backend.tools.passages import sample_note_passages, cap_passages
+from services.quizzes import generate_quiz, plan_question_count
+from tools.passages import sample_note_passages, cap_passages
 from database.models import User, Topic, Source
 
 username, topic_name = sys.argv[1], sys.argv[2] #takes username and topic name in command line as arguments 

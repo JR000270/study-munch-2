@@ -1,8 +1,8 @@
 from sqlmodel import Session, select
 from db import engine
 from database.models import Topic
-from backend.tools.chunking import search_chunks
-from backend.tools.search_tool import make_search_tool
+from tools.chunking import search_chunks
+from tools.search_tool import make_search_tool
 
 with Session(engine) as session:
     # find the topic created by test_ingest.py

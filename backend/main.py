@@ -10,22 +10,31 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-# from llama_index.core import SimpleDirectoryReader
-
 from db import engine, get_session
-from backend.database.models import User, TokenUsage, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
+from database.models import User, TokenUsage, Topic, Source, Chat, Message, FlashcardDeck, Flashcard, Quiz, Question, Answer, Attempt, AttemptAnswer
 from auth import CurrentUser, authenticate_user, create_access_token, hash_password
-from backend.tools.chunking import ingest_source
-from chat_service import chat_turn
-from backend.services.flashcards import plan_card_count, generate_cards
-from backend.services.quizzes import generate_quiz, plan_question_count
-from backend.tools.passages import  cap_passages, gather_passages
-from backend.file_readers import load_documents, SUPPORTED_EXTENSIONS
+from tools.chunking import ingest_source
+from services.chat_service import chat_turn
+from services.flashcards import plan_card_count, generate_cards
+from services.quizzes import generate_quiz, plan_question_count
+from tools.passages import  cap_passages, gather_passages
+from file_readers import load_documents, SUPPORTED_EXTENSIONS
 from usage import ensure_budget, make_token_counter, tokens_used_this_month, BudgetedUser, record_usage
 
 
 from datetime import datetime
 
+#start backend: uvicorn main:app --reload
+# #other usage commands:
+# cd backend
+# uvicorn main:app --reload
+# python -m tests.test_flashcards  old: python tests/test_flashcards.py
+# python -m database.create_db
+# alembic upgrade headcd backend
+# uvicorn main:app --reload
+# python -m tests.test_flashcards  old: python tests/test_flashcards.py
+# python -m database.create_db
+# alembic upgrade head
 
 UPLOAD_DIR = Path("uploads")
 ALLOWED_EXTENSIONS = SUPPORTED_EXTENSIONS

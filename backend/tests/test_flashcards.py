@@ -3,9 +3,9 @@ from sqlmodel import Session, select
 
 from db import engine
 from database.models import User, Topic, Source
-from backend.tools.passages import sample_note_passages, wiki_passages, cap_passages
-from backend.services.flashcards import plan_card_count, generate_cards
-from backend.tools.wiki_search_tool import WikiError
+from tools.passages import sample_note_passages, wiki_passages, cap_passages
+from services.flashcards import plan_card_count, generate_cards
+from tools.wiki_search_tool import WikiError
 
 # usage: python test_flashcards.py <username> "<topic name>" [wiki query]
 # Generates cards and prints them. Nothing is saved to the database.

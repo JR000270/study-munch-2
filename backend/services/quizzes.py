@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from llama_index.core.prompts import PromptTemplate
 from llama_index.llms.openai import OpenAI
 
-from backend.tools.passages import Passage, format_passages
+from tools.passages import Passage, format_passages
 
 load_dotenv("keys.env")
 
