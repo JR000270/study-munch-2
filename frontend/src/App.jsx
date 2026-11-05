@@ -2,6 +2,13 @@ import './App.css';
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Welcome from './components/welcome';
+import Layout from './components/layout';
+import Home from './components/home';
+import ChatRoom from './components/chat_room';
+import Quizzes from './components/quizzes';
+import Flashcards from './components/flashcards';
+import ContextFiles from './components/context_files';
+import UserPage from './components/user_page';
 import { getToken, clearToken, getMe } from './api';
 import { motion } from "motion/react"
 
@@ -31,14 +38,18 @@ function AppContent() {
       <Routes>
         <Route path="/"
           element={user ? <Navigate to="/home" replace /> : <Welcome onSignIn={setUser} />} />
-        <Route path="/home"
-          element={user ? (
-            <div className="p-8">
-              <h1 className="text-6xl text-orange-500 font-bold">Study Munch</h1>
-              <p className="text-orange-200">Signed in as {user.username}</p>
-              <button onClick={signOut} className="mt-4 text-orange-300 underline">Sign out</button>
-            </div>
-          ) : <Navigate to="/" replace />} />
+        {/* Pathless layout route: no URL of its own, it just wraps its children */}
+        <Route element={user ? <Layout user={user} onSignOut={signOut} /> : <Navigate to="/" replace />}>
+          <Route path="home" element={<Home />} />
+          <Route path="chat" element={<ChatRoom />} />
+          <Route path="quizzes" element={<Quizzes />} />
+          <Route path="flashcards" element={<Flashcards />} />
+          <Route path="files" element={<ContextFiles />} />
+          <Route path="user" element={<UserPage />} />
+        </Route>
+
+        {/* Any unknown URL goes back to the start */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );
