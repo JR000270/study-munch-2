@@ -29,7 +29,7 @@ export default function Welcome({ onSignIn }) {
     <section className="min-h-screen flex items-center justify-center gap-16 px-8">
       <div className="max-w-md">
         <h1 className="text-9xl font-bold text-orange-500">Study Munch</h1>
-        <p className="mt-4 text-4xl text-orange-200">A monster for locking in</p>
+        <p className="mt-4 text-4xl text-orange-200">A monster that eats your homework</p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-200 flex flex-col gap-3 bg-amber-950 p-10 rounded-xl">

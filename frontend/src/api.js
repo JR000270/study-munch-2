@@ -4,6 +4,16 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+export const getTopics = () => request("/topics");
+
+// POST /topics takes a Pydantic TopicCreate, so JSON body
+export const createTopic = (name) =>
+  request("/topics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+
 async function request(path, options = {}) {
   const headers = { ...options.headers };
   const token = getToken();
