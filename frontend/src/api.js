@@ -14,6 +14,16 @@ export const createTopic = (name) =>
     body: JSON.stringify({ name }),
   });
 
+export const getChats = (topicID) => request(`/chats?topic_id=${topicID}`);
+
+// POST /chats takes a Pydantic ChatCreate, so JSON body
+export const createChat = (topicID, name) =>
+  request("/chats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ topicID, name }),
+  });
+
 async function request(path, options = {}) {
   const headers = { ...options.headers };
   const token = getToken();
