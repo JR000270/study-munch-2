@@ -14,15 +14,24 @@ export const createTopic = (name) =>
     body: JSON.stringify({ name }),
   });
 
-export const getChats = (topicID) => request(`/chats?topic_id=${topicID}`);
+export const getChats = (topicID) => request(`/topics/${topicID}/chats`);
 
 // POST /chats takes a Pydantic ChatCreate, so JSON body
 export const createChat = (topicID, name) =>
-  request("/chats", {
+  request(`/topics/${topicID}/chats`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topicID, name }),
+    body: JSON.stringify({ name }),
   });
+
+export const getMessages = (chatID) => request(`/chats/${chatID}/messages`);
+
+export const sendMessage = (chatID, content) => 
+request(`/chats/${chatID}/messages`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ content }),
+});
 
 async function request(path, options = {}) {
   const headers = { ...options.headers };

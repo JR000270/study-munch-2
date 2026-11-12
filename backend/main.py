@@ -369,7 +369,7 @@ def list_chats(topic_id: uuid.UUID, user: CurrentUser, session: SessionDep):
     ).all()
     return [ChatOut(id=c.id, topic_id=c.topic_id, name=c.name) for c in chats]
 
-
+#retrieve chat messages
 @app.get("/chats/{chat_id}/messages", response_model=list[MessageOut])
 def get_messages(chat_id: uuid.UUID, user: CurrentUser, session: SessionDep):
     get_owned_chat(session, chat_id, user)
