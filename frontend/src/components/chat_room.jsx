@@ -11,6 +11,7 @@ export default function ChatRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [newName, setNewName] = useState("");
+  const [newMessage, setNewMessage] = useState("");
 
   //load the topic and its chats once, when ChatRoom mounts
   useEffect(() => {
@@ -45,7 +46,20 @@ export default function ChatRoom() {
         setError(err.message);
       }
     }
-  
+
+  //for sending a new message in the selected chat
+  async function handleSendMessage(e) {
+      e.preventDefault();
+      if (!newMessage.trim() || !chat) return;
+      try {
+        // setMessages((prev) => [...prev, { ...newMessage.trim(), role: "user" }]);   // add to the list without refetching
+        const response = await sendMessage(chat.id, newMessage.trim());
+        setMessages((prev) => [...prev, response]);   // add to the list without refetching
+        setNewMessage("");
+      } catch (err) {
+        setError(err.message);
+      }
+    }
 
   return (
     <>
@@ -90,7 +104,12 @@ export default function ChatRoom() {
                 <p className="text-orange-200">{m.content}</p>
               </div>
             ))}
+            
           </div>
+          <form onSubmit={handleSendMessage} className="flex gap-2 pt-2 border-t border-amber-700">
+                <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type your message..." className="flex-1 p-2 rounded bg-black text-white" />
+                <button className="p-2 rounded bg-orange-500 font-bold">Send</button>
+          </form>
         </div>
       )}
     </>
