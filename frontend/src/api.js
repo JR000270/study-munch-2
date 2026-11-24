@@ -33,6 +33,20 @@ request(`/chats/${chatID}/messages`, {
   body: JSON.stringify({ content }),
 });
 
+export const list_sources = (topicID) => request(`/topics/${topicID}/sources`);
+
+// POST /topics/{id}/sources takes UploadFile = File(...), so MULTIPART body.
+// The field name "file" must match the backend parameter name.
+// Don't set Content-Type: the browser adds it with the multipart boundary.
+export const upload_source = (topicID, file) => {
+  const form = new FormData();
+  form.append("file", file);
+  return request(`/topics/${topicID}/sources`, {
+    method: "POST",
+    body: form,
+  });
+};
+
 async function request(path, options = {}) {
   const headers = { ...options.headers };
   const token = getToken();
